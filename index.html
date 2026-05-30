@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日工作总结 - 团队版</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f6fa; min-height: 100vh; }
+.header { background: #2d3436; color: #fff; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 18px; font-weight: 600; }
+.header-right { display: flex; gap: 8px; align-items: center; }
+.user-tag { font-size: 13px; color: #dfe6e9; background: rgba(255,255,255,.1); padding: 4px 12px; border-radius: 4px; cursor: pointer; }
+.user-tag:hover { background: rgba(255,255,255,.2); }
+.btn { padding: 8px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: .2s; }
+.btn-primary { background: #0984e3; color: #fff; }
+.btn-primary:hover { background: #0773c5; }
+.btn-outline { background: transparent; border: 1px solid rgba(255,255,255,.5); color: #fff; }
+.btn-outline:hover { background: rgba(255,255,255,.1); }
+.btn-sm { padding: 4px 12px; font-size: 12px; }
+.tabs { display: flex; background: #fff; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+.tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; font-size: 14px; color: #636e72; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: .2s; }
+.tab:hover { color: #2d3436; }
+.tab.active { color: #0984e3; border-bottom-color: #0984e3; font-weight: 600; }
+.container { max-width: 800px; margin: 0 auto; padding: 0 16px 40px; }
+.date-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.date-bar input[type="date"] { padding: 10px 14px; border: 2px solid #dfe6e9; border-radius: 8px; font-size: 15px; width: 180px; }
+.card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.card h2 { font-size: 16px; color: #2d3436; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #0984e3; display: flex; align-items: center; gap: 8px; }
+.section-badge { display: inline-block; font-size: 12px; background: #0984e3; color: #fff; padding: 2px 8px; border-radius: 4px; }
+.inline-field { margin-bottom: 12px; display: flex; align-items: center; }
+.inline-field label { width: 50px; font-size: 14px; color: #636e72; flex-shrink: 0; }
+.inline-field input { padding: 8px 12px; border: 1px solid #dfe6e9; border-radius: 6px; font-size: 14px; width: 200px; }
+.work-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+.work-row input { flex: 1; padding: 10px; border: 1px solid #dfe6e9; border-radius: 6px; font-size: 14px; }
+.work-row select { padding: 10px 8px; border: 1px solid #dfe6e9; border-radius: 6px; font-size: 14px; width: 100px; background: #fff; }
+.progress-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.progress-done { background: #00b894; color: #fff; }
+.progress-half { background: #fdcb6e; color: #2d3436; }
+.progress-none { background: #dfe6e9; color: #636e72; }
+.add-btn { background: #00b894; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 13px; margin-top: 4px; }
+.add-btn:hover { background: #00a381; }
+.remove-btn { background: #fab1a0; color: #d63031; border: none; border-radius: 4px; cursor: pointer; padding: 6px 10px; font-size: 18px; line-height: 1; flex-shrink: 0; }
+.remove-btn:hover { background: #e17055; color: #fff; }
+.team-member { padding: 16px; border: 1px solid #dfe6e9; border-radius: 8px; margin-bottom: 12px; cursor: pointer; transition: .2s; }
+.team-member:hover { border-color: #0984e3; background: #f8f9fa; }
+.team-member .member-name { font-weight: 600; font-size: 15px; }
+.team-member .member-dept { color: #636e72; font-size: 13px; }
+.team-member .member-preview { color: #b2bec3; font-size: 13px; margin-top: 4px; }
+.team-member .member-work-count { font-size: 12px; color: #00b894; margin-top: 4px; }
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 99; }
+.modal { background: #fff; border-radius: 12px; padding: 30px; max-width: 660px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+.modal input { padding: 10px 14px; border: 2px solid #dfe6e9; border-radius: 8px; font-size: 15px; width: 100%; margin-bottom: 12px; }
+.modal .btn { margin-top: 8px; }
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2d3436; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 999; animation: fadeInOut 2s ease; pointer-events: none; }
+.toast.error { background: #d63031; }
+@keyframes fadeInOut { 0%,100% { opacity: 0; transform: translateX(-50%) translateY(-10px); } 10%,90% { opacity: 1; transform: translateX(-50%) translateY(0); } }
+.empty-state { text-align: center; padding: 40px; color: #b2bec3; }
+.view-detail { display: none; }
+.view-detail.show { display: block; }
+.back-link { color: #0984e3; cursor: pointer; font-size: 14px; margin-bottom: 16px; display: inline-block; }
+.back-link:hover { text-decoration: underline; }
+.footer { text-align: center; padding: 20px 0; color: #b2bec3; font-size: 12px; }
+#teamView { display: none; }
+#teamView.show { display: block; }
+#myView { display: none; }
+#myView.show { display: block; }
+.summary-readonly .work-row { opacity: .85; }
+.summary-readonly .work-row input { background: #f8f9fa; border-color: #eee; pointer-events: none; }
+.summary-readonly .work-row select { background: #f8f9fa; border-color: #eee; pointer-events: none; }
+.summary-readonly .inline-field input { background: #f8f9fa; border-color: #eee; pointer-events: none; }
+.summary-readonly textarea { background: #f8f9fa; border-color: #eee; pointer-events: none; }
+.summary-readonly .remove-btn, .summary-readonly .add-btn { display: none; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>每日工作总结</h1>
+  <div class="header-right">
+    <span class="user-tag" onclick="showLogin()" id="userTag">点击设置姓名</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('my')">我的总结</div>
+  <div class="tab" onclick="switchTab('team')">团队查看</div>
+</div>
+
+<div class="container">
+  <!-- 我的总结 -->
+  <div id="myView" class="show">
+    <div class="date-bar">
+      <input type="date" id="myDatePicker" onchange="loadMySummary()">
+      <button class="btn btn-primary btn-sm" onclick="loadMySummary()">刷新</button>
+      <span style="color:#b2bec3;font-size:13px;margin-left:8px;" id="myDateHint"></span>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-badge">1</span> 基本信息</h2>
+      <div class="inline-field"><label>姓名</label><input type="text" id="inputName" placeholder="请输入姓名" onchange="autoSave()"></div>
+      <div class="inline-field"><label>部门</label><input type="text" id="inputDept" placeholder="请输入部门" onchange="autoSave()"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-badge">2</span> 今日工作及完成进度</h2>
+      <div id="todayWorkList"></div>
+      <button class="add-btn" onclick="addWorkItem()">+ 添加工作事项</button>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-badge">3</span> 明日计划</h2>
+      <div id="planList"></div>
+      <button class="add-btn" onclick="addPlanItem()">+ 添加计划事项</button>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-badge">4</span> 备注</h2>
+      <textarea id="inputNotes" style="width:100%;min-height:80px;padding:12px;border:1px solid #dfe6e9;border-radius:6px;font-size:14px;resize:vertical;font-family:inherit;" placeholder="补充说明、遇到的问题、心得体会..." onchange="autoSave()"></textarea>
+    </div>
+
+    <div style="text-align:center;margin:20px 0;">
+      <button class="btn btn-primary" style="padding:12px 40px;font-size:16px;" onclick="saveMySummary()">保存总结</button>
+    </div>
+  </div>
+
+  <!-- 团队查看 -->
+  <div id="teamView">
+    <div class="date-bar">
+      <input type="date" id="teamDatePicker" onchange="loadTeamView()">
+      <span style="color:#b2bec3;font-size:13px;margin-left:8px;" id="teamDateHint"></span>
+    </div>
+    <div id="teamContent"></div>
+  </div>
+
+  <!-- 查看他人详情 -->
+  <div class="view-detail" id="detailView">
+    <span class="back-link" onclick="backToTeam()">← 返回团队列表</span>
+    <div id="detailContent"></div>
+  </div>
+
+  <div class="footer">数据实时同步，团队成员可互相查看</div>
+</div>
+
+<!-- 登录弹窗 -->
+<div class="modal-overlay" id="loginModal" style="display:none;">
+  <div class="modal">
+    <h3 style="margin-bottom:16px;">设置你的身份</h3>
+    <input type="text" id="loginName" placeholder="请输入你的姓名（必填）">
+    <input type="text" id="loginDept" placeholder="部门（选填）">
+    <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">确认</button>
+    <button class="btn btn-outline" style="width:100%;margin-top:8px;color:#636e72;border-color:#dfe6e9;" onclick="document.getElementById('loginModal').style.display='none'">取消</button>
+  </div>
+</div>
+
+<div id="toast" class="toast" style="display:none;"></div>
+
+<script>
+const API = '';
+let myName = localStorage.getItem('my_name') || '';
+let myDept = localStorage.getItem('my_dept') || '';
+const today = new Date().toISOString().split('T')[0];
+
+if (myName) {
+  document.getElementById('userTag').textContent = myName + (myDept ? ' · ' + myDept : '');
+}
+
+document.getElementById('myDatePicker').value = today;
+document.getElementById('teamDatePicker').value = today;
+updateMyDateHint();
+updateTeamDateHint();
+
+function updateMyDateHint() {
+  const d = document.getElementById('myDatePicker').value;
+  const hint = document.getElementById('myDateHint');
+  if (d === today) hint.textContent = '今天';
+  else {
+    const dt = new Date(d);
+    const days = ['日','一','二','三','四','五','六'];
+    hint.textContent = `${dt.getMonth()+1}月${dt.getDate()}日 周${days[dt.getDay()]}`;
+  }
+}
+
+function updateTeamDateHint() {
+  const d = document.getElementById('teamDatePicker').value;
+  const hint = document.getElementById('teamDateHint');
+  if (d === today) hint.textContent = '今天';
+  else {
+    const dt = new Date(d);
+    const days = ['日','一','二','三','四','五','六'];
+    hint.textContent = `${dt.getMonth()+1}月${dt.getDate()}日 周${days[dt.getDay()]}`;
+  }
+}
+
+document.getElementById('myDatePicker').addEventListener('change', () => { updateMyDateHint(); loadMySummary(); });
+document.getElementById('teamDatePicker').addEventListener('change', () => { updateTeamDateHint(); loadTeamView(); });
+
+function showLogin() {
+  document.getElementById('loginName').value = myName;
+  document.getElementById('loginDept').value = myDept;
+  document.getElementById('loginModal').style.display = 'flex';
+}
+
+function doLogin() {
+  const name = document.getElementById('loginName').value.trim();
+  if (!name) { showToast('请输入姓名', true); return; }
+  myName = name;
+  myDept = document.getElementById('loginDept').value.trim();
+  localStorage.setItem('my_name', myName);
+  localStorage.setItem('my_dept', myDept);
+  document.getElementById('userTag').textContent = myName + (myDept ? ' · ' + myDept : '');
+  document.getElementById('loginModal').style.display = 'none';
+  loadMySummary();
+  showToast('身份已设置');
+}
+
+async function api(method, path, body) {
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API + path, opts);
+    return await res.json();
+  } catch (e) {
+    showToast('无法连接服务器，请确认已启动 server.py', true);
+    throw e;
+  }
+}
+
+// ===== 我的总结 =====
+
+async function loadMySummary() {
+  if (!myName) { showLogin(); return; }
+  const date = document.getElementById('myDatePicker').value;
+  const res = await api('GET', `/api/summary?date=${date}&name=${encodeURIComponent(myName)}`);
+  const entry = res.data;
+  document.getElementById('inputName').value = myName;
+  document.getElementById('inputDept').value = (entry && entry.dept) || myDept || '';
+  renderWorkList(entry && entry.today_work ? entry.today_work : [{ content: '', progress: '未开始' }]);
+  renderPlanList(entry && entry.plan ? entry.plan : ['']);
+  document.getElementById('inputNotes').value = (entry && entry.notes) || '';
+}
+
+function renderWorkList(items) {
+  const container = document.getElementById('todayWorkList');
+  container.innerHTML = items.map((w, i) => `
+    <div class="work-row">
+      <input type="text" value="${escHtml(w.content||'')}" placeholder="工作内容" onchange="autoSave()">
+      <select onchange="autoSave()">
+        ${['未开始','25%','50%','75%','已完成'].map(p => `<option value="${p}" ${(w.progress||'未开始')===p?'selected':''}>${p}</option>`).join('')}
+      </select>
+      <button class="remove-btn" onclick="removeWorkItem(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function renderPlanList(items) {
+  const container = document.getElementById('planList');
+  container.innerHTML = items.map((v, i) => `
+    <div class="work-row">
+      <input type="text" value="${escHtml(v||'')}" placeholder="明日计划事项" onchange="autoSave()">
+      <button class="remove-btn" onclick="removePlanItem(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function addWorkItem() {
+  const container = document.getElementById('todayWorkList');
+  const div = document.createElement('div');
+  div.className = 'work-row';
+  div.innerHTML = `<input type="text" placeholder="工作内容" onchange="autoSave()">
+    <select onchange="autoSave()">
+      ${['未开始','25%','50%','75%','已完成'].map(p => `<option value="${p}">${p}</option>`).join('')}
+    </select>
+    <button class="remove-btn" onclick="this.parentElement.remove();autoSave();">×</button>`;
+  container.appendChild(div);
+  div.querySelector('input').focus();
+}
+
+function addPlanItem() {
+  const container = document.getElementById('planList');
+  const div = document.createElement('div');
+  div.className = 'work-row';
+  div.innerHTML = `<input type="text" placeholder="明日计划事项" onchange="autoSave()"><button class="remove-btn" onclick="this.parentElement.remove();autoSave();">×</button>`;
+  container.appendChild(div);
+  div.querySelector('input').focus();
+}
+
+function removeWorkItem(index) {
+  const container = document.getElementById('todayWorkList');
+  if (container.children.length <= 1) {
+    container.children[0].querySelector('input').value = '';
+    container.children[0].querySelector('select').value = '未开始';
+    autoSave();
+    return;
+  }
+  container.children[index].remove();
+  autoSave();
+}
+
+function removePlanItem(index) {
+  const container = document.getElementById('planList');
+  if (container.children.length <= 1) {
+    container.children[0].querySelector('input').value = '';
+    autoSave();
+    return;
+  }
+  container.children[index].remove();
+  autoSave();
+}
+
+let autoSaveTimer;
+function autoSave() { clearTimeout(autoSaveTimer); autoSaveTimer = setTimeout(saveMySummary, 800); }
+
+async function saveMySummary() {
+  if (!myName) { showLogin(); return; }
+  const date = document.getElementById('myDatePicker').value;
+  const workInputs = document.getElementById('todayWorkList').querySelectorAll('input');
+  const workSelects = document.getElementById('todayWorkList').querySelectorAll('select');
+  const todayWork = [];
+  for (let i = 0; i < workInputs.length; i++) {
+    const content = workInputs[i].value.trim();
+    const progress = workSelects[i] ? workSelects[i].value : '未开始';
+    if (content || progress !== '未开始') todayWork.push({ content, progress });
+  }
+  const planInputs = document.getElementById('planList').querySelectorAll('input');
+  const plan = Array.from(planInputs).map(i => i.value.trim()).filter(v => v);
+
+  const payload = {
+    date, name: myName,
+    dept: document.getElementById('inputDept').value.trim(),
+    today_work: todayWork.length ? todayWork : [{ content: '', progress: '未开始' }],
+    plan: plan.length ? plan : [],
+    notes: document.getElementById('inputNotes').value.trim()
+  };
+  const res = await api('POST', '/api/summary', payload);
+  if (res.ok) showToast('保存成功');
+}
+
+// ===== 团队查看 =====
+
+async function loadTeamView() {
+  const date = document.getElementById('teamDatePicker').value;
+  const res = await api('GET', `/api/summary?date=${date}`);
+  const container = document.getElementById('teamContent');
+  const data = res.data || [];
+  if (data.length === 0) {
+    container.innerHTML = '<div class="empty-state">该日期暂无团队成员提交总结</div>';
+    return;
+  }
+  container.innerHTML = data.map(e => {
+    const workCount = (e.today_work || []).filter(w => w.content).length;
+    const finished = (e.today_work || []).filter(w => w.progress === '已完成').length;
+    const preview = (e.today_work || []).filter(w => w.content).map(w => w.content).slice(0, 2).join('；');
+    return `<div class="team-member" onclick="viewDetail('${escAttr(e.name)}', '${date}')">
+      <div class="member-name">${escHtml(e.name)}${e.dept ? ' · ' + escHtml(e.dept) : ''}</div>
+      <div class="member-preview">${escHtml(preview) || '暂无工作记录'}</div>
+      <div class="member-work-count">${workCount} 项工作 · ${finished} 项已完成 · ${e.updated_at ? e.updated_at.slice(0,16) : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function escAttr(s) { return (s||'').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+async function viewDetail(name, date) {
+  const res = await api('GET', `/api/summary?date=${date}&name=${encodeURIComponent(name)}`);
+  const e = res.data;
+  if (!e) { showToast('暂无数据', true); return; }
+  document.getElementById('teamView').classList.remove('show');
+  document.getElementById('detailView').classList.add('show');
+  const workItems = (e.today_work || []).map(w => `
+    <div class="work-row">
+      <input type="text" value="${escHtml(w.content||'')}" readonly>
+      <select disabled><option>${escHtml(w.progress||'未开始')}</option></select>
+    </div>
+  `).join('') || '<div class="empty-state">无</div>';
+  const planItems = (e.plan || []).map(p => `
+    <div class="work-row"><input type="text" value="${escHtml(p)}" readonly></div>
+  `).join('') || '<div class="empty-state">无</div>';
+  document.getElementById('detailContent').innerHTML = `
+    <div class="card summary-readonly">
+      <h2>${escHtml(e.name)}${e.dept ? ' · ' + escHtml(e.dept) : ''} — ${date}</h2>
+      <p style="color:#b2bec3;font-size:13px;margin-bottom:12px;">更新时间：${e.updated_at || ''}</p>
+    </div>
+    <div class="card summary-readonly">
+      <h2><span class="section-badge">1</span> 今日工作及完成进度</h2>
+      ${workItems}
+    </div>
+    <div class="card summary-readonly">
+      <h2><span class="section-badge">2</span> 明日计划</h2>
+      ${planItems}
+    </div>
+    <div class="card summary-readonly">
+      <h2><span class="section-badge">3</span> 备注</h2>
+      <textarea readonly style="width:100%;min-height:60px;padding:12px;border:1px solid #dfe6e9;border-radius:6px;font-size:14px;resize:vertical;font-family:inherit;background:#f8f9fa;">${escHtml(e.notes||'无')}</textarea>
+    </div>
+  `;
+}
+
+function backToTeam() {
+  document.getElementById('detailView').classList.remove('show');
+  document.getElementById('teamView').classList.add('show');
+}
+
+// ===== 通用 =====
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (tab === 'my' && i === 0) || (tab === 'team' && i === 1));
+  });
+  document.getElementById('myView').classList.toggle('show', tab === 'my');
+  document.getElementById('teamView').classList.toggle('show', tab === 'team');
+  document.getElementById('detailView').classList.remove('show');
+  if (tab === 'my') loadMySummary();
+  if (tab === 'team') loadTeamView();
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  t.style.display = 'block';
+  t.style.animation = 'none';
+  t.offsetHeight;
+  t.style.animation = 'fadeInOut 2s ease';
+  setTimeout(() => { t.style.display = 'none'; }, 2000);
+}
+
+if (myName) loadMySummary();
+else showLogin();
+</script>
+</body>
+</html>
