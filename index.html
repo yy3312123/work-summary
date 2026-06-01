@@ -71,6 +71,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .summary-readonly .inline-field input { background: #f8f9fa; border-color: #eee; pointer-events: none; }
 .summary-readonly textarea { background: #f8f9fa; border-color: #eee; pointer-events: none; }
 .summary-readonly .remove-btn, .summary-readonly .add-btn { display: none; }
+.photo-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.photo-item { position: relative; width: 120px; height: 120px; border-radius: 8px; overflow: hidden; border: 1px solid #dfe6e9; }
+.photo-item img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+.photo-item .del-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.6); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 14px; line-height: 22px; text-align: center; padding: 0; }
+.photo-item .del-btn:hover { background: #d63031; }
+.upload-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #dfe6e9; color: #2d3436; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; margin-top: 4px; transition: .2s; }
+.upload-btn:hover { background: #b2bec3; }
+.upload-btn input[type="file"] { display: none; }
+.photo-lightbox { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.85); display: flex; align-items: center; justify-content: center; z-index: 200; cursor: pointer; }
+.photo-lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 4px; }
 </style>
 </head>
 <body>
@@ -116,6 +126,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     <div class="card">
       <h2><span class="section-badge">4</span> 备注</h2>
       <textarea id="inputNotes" style="width:100%;min-height:80px;padding:12px;border:1px solid #dfe6e9;border-radius:6px;font-size:14px;resize:vertical;font-family:inherit;" placeholder="补充说明、遇到的问题、心得体会..." onchange="autoSave()"></textarea>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-badge">5</span> 工作照片</h2>
+      <div id="photoGrid" class="photo-grid"></div>
+      <label class="upload-btn">
+        + 上传照片
+        <input type="file" accept="image/*" multiple onchange="uploadPhotos(event)">
+      </label>
     </div>
 
     <div style="text-align:center;margin:20px 0;">
@@ -237,6 +256,8 @@ async function loadMySummary() {
   renderWorkList(entry && entry.today_work ? entry.today_work : [{ content: '', progress: '未开始' }]);
   renderPlanList(entry && entry.plan ? entry.plan : ['']);
   document.getElementById('inputNotes').value = (entry && entry.notes) || '';
+  currentPhotos = (entry && entry.photos) ? entry.photos : [];
+  renderPhotos();
 }
 
 function renderWorkList(items) {
@@ -309,7 +330,59 @@ function removePlanItem(index) {
   autoSave();
 }
 
-let autoSaveTimer;
+let currentPhotos = [];
+
+async function uploadPhotos(event) {
+  const files = event.target.files;
+  if (!files.length) return;
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch(API + '/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.ok) {
+        currentPhotos.push(data.filename);
+      } else {
+        showToast(data.error || '上传失败', true);
+      }
+    } catch (e) {
+      showToast('上传失败，请检查网络', true);
+    }
+  }
+  renderPhotos();
+  autoSave();
+  event.target.value = '';
+}
+
+function renderPhotos() {
+  const grid = document.getElementById('photoGrid');
+  grid.innerHTML = currentPhotos.map(fn => `
+    <div class="photo-item">
+      <img src="${API}/uploads/${fn}" onclick="openLightbox('${API}/uploads/${fn}')" title="点击放大">
+      <button class="del-btn" onclick="deletePhoto('${fn}')">×</button>
+    </div>
+  `).join('');
+}
+
+function deletePhoto(filename) {
+  currentPhotos = currentPhotos.filter(f => f !== filename);
+  fetch(API + '/api/delete-photo', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename })
+  }).catch(() => {});
+  renderPhotos();
+  autoSave();
+}
+
+function openLightbox(url) {
+  const lb = document.createElement('div');
+  lb.className = 'photo-lightbox';
+  lb.innerHTML = '<img src="' + url + '">';
+  lb.onclick = () => lb.remove();
+  document.body.appendChild(lb);
+}
 function autoSave() { clearTimeout(autoSaveTimer); autoSaveTimer = setTimeout(saveMySummary, 800); }
 
 async function saveMySummary() {
@@ -331,7 +404,8 @@ async function saveMySummary() {
     dept: document.getElementById('inputDept').value.trim(),
     today_work: todayWork.length ? todayWork : [{ content: '', progress: '未开始' }],
     plan: plan.length ? plan : [],
-    notes: document.getElementById('inputNotes').value.trim()
+    notes: document.getElementById('inputNotes').value.trim(),
+    photos: currentPhotos
   };
   const res = await api('POST', '/api/summary', payload);
   if (res.ok) showToast('保存成功');
@@ -394,6 +468,11 @@ async function viewDetail(name, date) {
       <h2><span class="section-badge">3</span> 备注</h2>
       <textarea readonly style="width:100%;min-height:60px;padding:12px;border:1px solid #dfe6e9;border-radius:6px;font-size:14px;resize:vertical;font-family:inherit;background:#f8f9fa;">${escHtml(e.notes||'无')}</textarea>
     </div>
+    ${(e.photos && e.photos.length) ? `
+    <div class="card summary-readonly">
+      <h2><span class="section-badge">4</span> 工作照片</h2>
+      <div class="photo-grid">${e.photos.map(fn => `<div class="photo-item"><img src="${API}/uploads/${fn}" onclick="openLightbox('${API}/uploads/${fn}')"></div>`).join('')}</div>
+    </div>` : ''}
   `;
 }
 
